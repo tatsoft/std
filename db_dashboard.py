@@ -189,7 +189,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
         short_title = "احصائي_راسبين_مواد.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=15, topMargin=15, bottomMargin=20)
+            data=pdf_buffer.getvalue(),
             file_name=short_title,
             mime="application/pdf"
         )
@@ -257,7 +257,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
         doc.build(elements)
         short_title = "احصائي_راسبين_مراحل.pdf"
         st.download_button(
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
             file_name=short_title,
             mime="application/pdf"
