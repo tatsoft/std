@@ -407,13 +407,13 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
         conn_titles.close()
 
     st.subheader("عنوان التقرير المخصص")
-    col_title1, col_title2, col_title3 = st.columns([2,3,1])
+    col_title1, col_title2, col_title3 = st.columns([2,4,0.7])
     with col_title1:
         selected_title = st.selectbox("اختر عنوان التقرير للطباعة", st.session_state['titles_list'] if st.session_state['titles_list'] else ["تقرير الطلاب الراسبين (قابل للطباعة)"])
     with col_title2:
-        new_title = st.text_input("أضف عنوان جديد للتقرير")
+        new_title = st.text_input("أضف عنوان جديد للتقرير", label_visibility="collapsed", placeholder="أضف عنوان جديد للتقرير")
     with col_title3:
-        add_title_clicked = st.button("إضافة العنوان")
+        add_title_clicked = st.button("إضافة العنوان", use_container_width=True)
     if add_title_clicked and new_title.strip():
         conn_titles = sqlite3.connect('students_failures.db')
         c_titles = conn_titles.cursor()
