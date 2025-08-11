@@ -135,7 +135,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
     # زر تحميل التقرير كـ PDF
-    import io
+    import io, datetime
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
@@ -203,7 +203,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
     # زر تحميل التقرير كـ PDF
-    import io
+    import io, datetime
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
@@ -271,7 +271,7 @@ elif report_type == "عدد الطلاب الراسبين في كل فصل در�
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
     # زر تحميل التقرير كـ PDF
-    import io
+    import io, datetime
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
@@ -339,7 +339,7 @@ elif report_type == "عدد الطلاب الراسبين في كل عام در�
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
     # زر تحميل التقرير كـ PDF
-    import io
+    import io, datetime
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
