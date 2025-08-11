@@ -253,13 +253,13 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 today_str = datetime.datetime.now().strftime('%Y-%m-%d')
                 # التاريخ يسار
                 canvas.drawRightString(doc.pagesize[0]-20, doc.pagesize[1]-30, ar_text(f'التاريخ: {today_str}'))
+                # اسم الطالب تحت التاريخ إذا تمت الفلترة برقم الهوية فقط
+                if اسم_الطالب_مفلتر:
+                    canvas.drawRightString(doc.pagesize[0]-20, doc.pagesize[1]-50, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
                 # العنوان وسط
                 canvas.drawCentredString(doc.pagesize[0]/2, doc.pagesize[1]-30, ar_text(selected_title))
                 # عدد الطلاب يمين
                 canvas.drawString(20, doc.pagesize[1]-30, ar_text(f'عدد الطلاب: {len(df)}'))
-                # اسم الطالب يمين إذا تمت الفلترة برقم الهوية فقط
-                if اسم_الطالب_مفلتر:
-                    canvas.drawString(doc.pagesize[0]-180, doc.pagesize[1]-30, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
                 # الفلاتر تحت العنوان
                 filter_labels = []
                 if المادة != 'كل المواد':
