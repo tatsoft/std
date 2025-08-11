@@ -554,6 +554,16 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             # إعداد دالة رأس الصفحة
             def draw_header(canvas, doc):
                 canvas.saveState()
+                # رسم شعار وزارة التعليم أعلى يمين الصفحة
+                try:
+                    from reportlab.lib.utils import ImageReader
+                    logo_path = "MOE_logo.png"  # ضع صورة الشعار في نفس مجلد السكريبت
+                    logo = ImageReader(logo_path)
+                    logo_width = 60
+                    logo_height = 60
+                    canvas.drawImage(logo, doc.pagesize[0]-logo_width-10, doc.pagesize[1]-logo_height-10, width=logo_width, height=logo_height, mask='auto')
+                except Exception:
+                    pass
                 # إعداد الخط
                 canvas.setFont(font_bold, 14)
                 today_str = datetime.datetime.now().strftime('%Y-%m-%d')
