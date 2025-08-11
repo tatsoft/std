@@ -66,10 +66,10 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
     # زر تحميل التقرير كـ PDF
-    import io
+    import io, datetime
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.pdfbase.ttfonts import TTFont
@@ -82,7 +82,7 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
             pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
             font_name = 'Amiri-Regular'
             font_bold = 'Amiri-Bold'
-        except Exception:
+        except (FileNotFoundError, OSError):
             font_name = 'Helvetica'
             font_bold = 'Helvetica-Bold'
         page_size = A4
@@ -90,18 +90,16 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
             try:
                 reshaped = arabic_reshaper.reshape(str(text))
                 return get_display(reshaped)
-            except Exception:
+            except (TypeError, ValueError):
                 return str(text)
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
         styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
         elements = []
-        # رأس التقرير
         today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل مادة لكل مرحلة لكل فصل دراسي لكل عام'), styles['ArabicTitle']))
-        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Paragraph(ar_text('تقرير إحصائي: عدد الطلاب الراسبين في كل مادة لكل مرحلة لكل فصل دراسي لكل عام'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text('تاريخ التقرير: ' + today_str), styles['Arabic']))
         elements.append(Spacer(1, 12))
-        # جدول البيانات
         data_table = [ [ar_text(col) for col in df.columns] ]
         for _, row in df.iterrows():
             data_table.append([ar_text(str(val)) for val in row])
