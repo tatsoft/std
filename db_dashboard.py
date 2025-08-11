@@ -65,6 +65,66 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
     '''
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
+    # زر تحميل التقرير كـ PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير PDF..."):
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdf_buffer = io.BytesIO()
+        try:
+            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
+            font_name = 'Amiri-Regular'
+            font_bold = 'Amiri-Bold'
+        except Exception:
+            font_name = 'Helvetica'
+            font_bold = 'Helvetica-Bold'
+        page_size = A4
+        def ar_text(text):
+            try:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            except Exception:
+                return str(text)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
+        styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
+        elements = []
+        # رأس التقرير
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل مادة لكل مرحلة لكل فصل دراسي لكل عام'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Spacer(1, 12))
+        # جدول البيانات
+        data_table = [ [ar_text(col) for col in df.columns] ]
+        for _, row in df.iterrows():
+            data_table.append([ar_text(str(val)) for val in row])
+        table = Table(data_table, repeatRows=1)
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc.build(elements)
+        st.download_button(
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            data=pdf_buffer.getvalue(),
+            file_name="stat_report.pdf",
+            mime="application/pdf"
+        )
 # (Removed duplicate block for "عدد واسماء الطلاب الراسبين في مادة لكل مرحلة لكل فصل دراسي لكل عام")
 elif report_type == "عدد الطلاب الراسبين في كل مادة":
     query = '''
@@ -76,6 +136,64 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
     '''
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
+    # زر تحميل التقرير كـ PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير PDF..."):
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdf_buffer = io.BytesIO()
+        try:
+            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
+            font_name = 'Amiri-Regular'
+            font_bold = 'Amiri-Bold'
+        except Exception:
+            font_name = 'Helvetica'
+            font_bold = 'Helvetica-Bold'
+        page_size = A4
+        def ar_text(text):
+            try:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            except Exception:
+                return str(text)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
+        styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
+        elements = []
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل مادة'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Spacer(1, 12))
+        data_table = [ [ar_text(col) for col in df.columns] ]
+        for _, row in df.iterrows():
+            data_table.append([ar_text(str(val)) for val in row])
+        table = Table(data_table, repeatRows=1)
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc.build(elements)
+        st.download_button(
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            data=pdf_buffer.getvalue(),
+            file_name="stat_report.pdf",
+            mime="application/pdf"
+        )
 elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
     query = '''
     SELECT s.name AS المرحلة, COUNT(DISTINCT f.student_id) AS عدد_الطلاب_الراسبين
@@ -86,6 +204,64 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
     '''
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
+    # زر تحميل التقرير كـ PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير PDF..."):
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdf_buffer = io.BytesIO()
+        try:
+            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
+            font_name = 'Amiri-Regular'
+            font_bold = 'Amiri-Bold'
+        except Exception:
+            font_name = 'Helvetica'
+            font_bold = 'Helvetica-Bold'
+        page_size = A4
+        def ar_text(text):
+            try:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            except Exception:
+                return str(text)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
+        styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
+        elements = []
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل مرحلة'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Spacer(1, 12))
+        data_table = [ [ar_text(col) for col in df.columns] ]
+        for _, row in df.iterrows():
+            data_table.append([ar_text(str(val)) for val in row])
+        table = Table(data_table, repeatRows=1)
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc.build(elements)
+        st.download_button(
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            data=pdf_buffer.getvalue(),
+            file_name="stat_report.pdf",
+            mime="application/pdf"
+        )
 elif report_type == "عدد الطلاب الراسبين في كل فصل دراسي":
     query = '''
     SELECT t.name AS الفصل, COUNT(DISTINCT f.student_id) AS عدد_الطلاب_الراسبين
@@ -96,6 +272,64 @@ elif report_type == "عدد الطلاب الراسبين في كل فصل در�
     '''
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
+    # زر تحميل التقرير كـ PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير PDF..."):
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdf_buffer = io.BytesIO()
+        try:
+            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
+            font_name = 'Amiri-Regular'
+            font_bold = 'Amiri-Bold'
+        except Exception:
+            font_name = 'Helvetica'
+            font_bold = 'Helvetica-Bold'
+        page_size = A4
+        def ar_text(text):
+            try:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            except Exception:
+                return str(text)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
+        styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
+        elements = []
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل فصل دراسي'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Spacer(1, 12))
+        data_table = [ [ar_text(col) for col in df.columns] ]
+        for _, row in df.iterrows():
+            data_table.append([ar_text(str(val)) for val in row])
+        table = Table(data_table, repeatRows=1)
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc.build(elements)
+        st.download_button(
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            data=pdf_buffer.getvalue(),
+            file_name="stat_report.pdf",
+            mime="application/pdf"
+        )
 elif report_type == "عدد الطلاب الراسبين في كل عام دراسي":
     query = '''
     SELECT y.name AS العام, COUNT(DISTINCT f.student_id) AS عدد_الطلاب_الراسبين
@@ -106,6 +340,64 @@ elif report_type == "عدد الطلاب الراسبين في كل عام در�
     '''
     df = pd.read_sql_query(query, conn)
     st.dataframe(df)
+    # زر تحميل التقرير كـ PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير PDF..."):
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        pdf_buffer = io.BytesIO()
+        try:
+            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
+            font_name = 'Amiri-Regular'
+            font_bold = 'Amiri-Bold'
+        except Exception:
+            font_name = 'Helvetica'
+            font_bold = 'Helvetica-Bold'
+        page_size = A4
+        def ar_text(text):
+            try:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            except Exception:
+                return str(text)
+        styles = getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, spaceAfter=8))
+        styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1))
+        elements = []
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        elements.append(Paragraph(ar_text(f'تقرير إحصائي: عدد الطلاب الراسبين في كل عام دراسي'), styles['ArabicTitle']))
+        elements.append(Paragraph(ar_text(f'تاريخ التقرير: {today_str}'), styles['Arabic']))
+        elements.append(Spacer(1, 12))
+        data_table = [ [ar_text(col) for col in df.columns] ]
+        for _, row in df.iterrows():
+            data_table.append([ar_text(str(val)) for val in row])
+        table = Table(data_table, repeatRows=1)
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc.build(elements)
+        st.download_button(
+            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            data=pdf_buffer.getvalue(),
+            file_name="stat_report.pdf",
+            mime="application/pdf"
+        )
 
 elif report_type == "عدد واسماء الطلاب الراسبين في مادة لكل مرحلة لكل فصل دراسي لكل عام":
     # إدارة العناوين المخصصة
