@@ -239,8 +239,8 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             pdf_buffer = io.BytesIO()
             # تسجيل الخط العربي (Amiri فقط)
             try:
-                pdfmetrics.registerFont(TTFont('Amiri-Regular', 'amiri/Amiri-Regular.ttf'))
-                pdfmetrics.registerFont(TTFont('Amiri-Bold', 'amiri/Amiri-Bold.ttf'))
+                pdfmetrics.registerFont(TTFont('Amiri-Regular', 'Amiri/Amiri-Regular.ttf'))
+                pdfmetrics.registerFont(TTFont('Amiri-Bold', 'Amiri/Amiri-Bold.ttf'))
                 font_name = 'Amiri-Regular'
                 font_bold = 'Amiri-Bold'
             except Exception:
