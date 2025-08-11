@@ -117,10 +117,11 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
         elements.append(table)
         doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         doc.build(elements)
+        short_title = "احصائي_راسبين_مواد_مراحل_فصول_اعوام.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
-            file_name="stat_report.pdf",
+            file_name=short_title,
             mime="application/pdf"
         )
 # (Removed duplicate block for "عدد واسماء الطلاب الراسبين في مادة لكل مرحلة لكل فصل دراسي لكل عام")
@@ -186,10 +187,11 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
         elements.append(table)
         doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         doc.build(elements)
+        short_title = "احصائي_راسبين_مواد.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
-            file_name="stat_report.pdf",
+            file_name=short_title,
             mime="application/pdf"
         )
 elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
@@ -254,10 +256,11 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
         elements.append(table)
         doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         doc.build(elements)
+        short_title = "احصائي_راسبين_مراحل.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
-            file_name="stat_report.pdf",
+            file_name=short_title,
             mime="application/pdf"
         )
 elif report_type == "عدد الطلاب الراسبين في كل فصل دراسي":
@@ -322,10 +325,11 @@ elif report_type == "عدد الطلاب الراسبين في كل فصل در�
         elements.append(table)
         doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         doc.build(elements)
+        short_title = "احصائي_راسبين_فصول.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
-            file_name="stat_report.pdf",
+            file_name=short_title,
             mime="application/pdf"
         )
 elif report_type == "عدد الطلاب الراسبين في كل عام دراسي":
@@ -390,10 +394,11 @@ elif report_type == "عدد الطلاب الراسبين في كل عام در�
         elements.append(table)
         doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         doc.build(elements)
+        short_title = "احصائي_راسبين_اعوام.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
             data=pdf_buffer.getvalue(),
-            file_name="stat_report.pdf",
+            file_name=short_title,
             mime="application/pdf"
         )
 
@@ -745,11 +750,16 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 canvas.drawString(20, 15, ar_text(f'صفحة {page_num}'))
             canvas.restoreState()
         doc.build(elements, onFirstPage=lambda c, d: (draw_header(c, d), draw_footer_with_total(c, d)), onLaterPages=lambda c, d: (draw_header(c, d), draw_footer_with_total(c, d)))
+        def make_filename(title):
+            import re
+            s = re.sub(r'[^\w\u0600-\u06FF]+', '_', title)
+            s = s.strip('_')
+            return f"{s}.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (يدعم العربية)",
             data=pdf_buffer.getvalue(),
-            file_name="filtered_report.pdf",
-mime="application/pdf"
+            file_name=make_filename(selected_title),
+            mime="application/pdf"
         )
 
 if report_type == "قائمة الطلاب المتعثرين مع التفاصيل":
