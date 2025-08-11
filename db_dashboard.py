@@ -120,7 +120,7 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
         short_title = "احصائي_راسبين_مواد_مراحل_فصول_اعوام.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
-            data=pdf_buffer.getvalue(),
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
             file_name=short_title,
             mime="application/pdf"
         )
@@ -140,7 +140,6 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib import colors
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.pdfbase import pdfmetrics
@@ -190,7 +189,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مادة":
         short_title = "احصائي_راسبين_مواد.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
-            data=pdf_buffer.getvalue(),
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=15, topMargin=15, bottomMargin=20)
             file_name=short_title,
             mime="application/pdf"
         )
@@ -209,7 +208,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
-        from reportlab.lib import colors
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.pdfbase import pdfmetrics
@@ -259,7 +258,7 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
         doc.build(elements)
         short_title = "احصائي_راسبين_مراحل.pdf"
         st.download_button(
-            label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
             data=pdf_buffer.getvalue(),
             file_name=short_title,
             mime="application/pdf"
@@ -524,6 +523,8 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     col_pdf1, col_pdf2, col_pdf3 = st.columns([3,1,1])
     with col_pdf3:
         hide_seq_col = st.checkbox("إخفاء عمود التسلسل", value=False)
+        hide_year_col = st.checkbox("إخفاء عمود العام", value=False)
+        hide_signature_col = st.checkbox("إخفاء عمود التوقيع", value=False)
     with col_pdf2:
         page_orientation = st.radio("اتجاه الصفحة", ["عمودي (A4)", "عرضي (A4 Landscape)"], horizontal=True)
     with col_pdf1:
@@ -607,6 +608,24 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 date_x = page_width - col_width + 10
                 date_y = top_y - row_height/2
                 canvas.drawString(date_x, date_y, ar_text(f'التاريخ: {today_str}'))
+
+                # الفلاتر تحت الشعار مباشرة (يسار الصف الثاني)
+                filter_labels = []
+                if المادة != 'كل المواد':
+                    filter_labels.append(f'المادة: {المادة}')
+                if المرحلة != 'كل المراحل':
+                    filter_labels.append(f'المرحلة: {المرحلة}')
+                if الفصل != 'كل الفصول':
+                    filter_labels.append(f'الفصل: {الفصل}')
+                if العام != 'كل الأعوام':
+                    filter_labels.append(f'العام: {العام}')
+                if filter_labels:
+                    filters_text = ' | '.join(filter_labels)
+                    filters_x = 0.15 * col_width
+                    filters_y = top_y - logo_h - 18
+                    canvas.setFont(font_name, 11)
+                    canvas.drawString(filters_x, filters_y, ar_text(filters_text))
+
                 # الصف الثاني: عدد الطلاب و عدد المواد تحت التاريخ في نفس الخلية
                 unique_students = df['رقم_الهوية'].nunique() if 'رقم_الهوية' in df.columns else len(df)
                 stats_x = date_x
@@ -621,22 +640,6 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 if اسم_الطالب_مفلتر:
                     canvas.setFont(font_name, 12)
                     canvas.drawCentredString(page_width/2, center_y, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
-                # الفلاتر في يمين الصف الثاني (بدلاً من عدد مواد الرسوب)
-                filter_labels = []
-                if المادة != 'كل المواد':
-                    filter_labels.append(f'المادة: {المادة}')
-                if المرحلة != 'كل المراحل':
-                    filter_labels.append(f'المرحلة: {المرحلة}')
-                if الفصل != 'كل الفصول':
-                    filter_labels.append(f'الفصل: {الفصل}')
-                if العام != 'كل الأعوام':
-                    filter_labels.append(f'العام: {العام}')
-                if filter_labels:
-                    filters_text = ' | '.join(filter_labels)
-                    filters_x = page_width - col_width + 10
-                    filters_y = center_y
-                    canvas.setFont(font_name, 11)
-                    canvas.drawString(filters_x, filters_y, ar_text(filters_text))
                 canvas.restoreState()
 
             # إعداد دالة ذيل الصفحة
@@ -676,15 +679,21 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
         if 'الدرجة' not in base_cols:
             base_cols.append('الدرجة')
         # ترتيب الأعمدة: الدرجة في أقصى اليمين
-        col_order = ['الدرجة', 'التسلسل', 'اسم_الطالب', 'المادة', 'المرحلة', 'الفصل', 'العام', 'التوقيع']
-        # إخفاء أعمدة الفلاتر
-        visible_cols = [col for col in col_order if col not in filter_cols]
-        # إخفاء عمود اسم الطالب إذا تمت الفلترة برقم الهوية فقط
-        if اخفاء_عمود_الاسم and 'اسم_الطالب' in visible_cols:
-            visible_cols.remove('اسم_الطالب')
-        # إخفاء عمود التسلسل إذا تم اختيار ذلك
-        if hide_seq_col and 'التسلسل' in visible_cols:
-            visible_cols.remove('التسلسل')
+    col_order = ['الدرجة', 'التسلسل', 'اسم_الطالب', 'المادة', 'المرحلة', 'الفصل', 'العام', 'التوقيع']
+    # إخفاء أعمدة الفلاتر
+    visible_cols = [col for col in col_order if col not in filter_cols]
+    # إخفاء عمود اسم الطالب إذا تمت الفلترة برقم الهوية فقط
+    if اخفاء_عمود_الاسم and 'اسم_الطالب' in visible_cols:
+        visible_cols.remove('اسم_الطالب')
+    # إخفاء عمود التسلسل إذا تم اختيار ذلك
+    if hide_seq_col and 'التسلسل' in visible_cols:
+        visible_cols.remove('التسلسل')
+    # إخفاء عمود العام إذا تم اختيار ذلك
+    if hide_year_col and 'العام' in visible_cols:
+        visible_cols.remove('العام')
+    # إخفاء عمود التوقيع إذا تم اختيار ذلك
+    if hide_signature_col and 'التوقيع' in visible_cols:
+        visible_cols.remove('التوقيع')
         if len(df) == 0:
             elements.append(Spacer(1, 24))
             elements.append(Paragraph(ar_text('لا توجد بيانات مطابقة للفلاتر المختارة.'), styles['Arabic']))
