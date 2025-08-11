@@ -264,8 +264,11 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                     canvas.drawRightString(doc.pagesize[0]-20, doc.pagesize[1]-50, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
                 # العنوان وسط
                 canvas.drawCentredString(doc.pagesize[0]/2, doc.pagesize[1]-30, ar_text(selected_title))
-                # عدد الطلاب يمين
-                canvas.drawString(20, doc.pagesize[1]-30, ar_text(f'عدد الطلاب: {len(df)}'))
+                # عدد الطلاب يمين (بدون تكرار)
+                unique_students = df['رقم_الهوية'].nunique() if 'رقم_الهوية' in df.columns else len(df)
+                canvas.drawString(20, doc.pagesize[1]-30, ar_text(f'عدد الطلاب (بدون تكرار): {unique_students}'))
+                # عدد مواد الرسوب (عدد الصفوف)
+                canvas.drawString(20, doc.pagesize[1]-50, ar_text(f'عدد مواد الرسوب: {len(df)}'))
                 # الفلاتر تحت العنوان
                 filter_labels = []
                 if المادة != 'كل المواد':
@@ -279,7 +282,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 if filter_labels:
                     filters_text = ' | '.join(filter_labels)
                     canvas.setFont(font_name, 12)
-                    canvas.drawString(20, doc.pagesize[1]-50, ar_text(filters_text))
+                    canvas.drawString(20, doc.pagesize[1]-70, ar_text(filters_text))
                 canvas.restoreState()
 
             # إعداد دالة ذيل الصفحة
