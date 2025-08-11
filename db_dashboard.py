@@ -546,9 +546,20 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     excel_rows.append([ar_text_excel('توقيع المسؤول:')])
     import io
     with st.spinner("جاري تجهيز تقرير Excel..."):
+        import openpyxl
+        from openpyxl.styles import Font
         excel_buffer = io.BytesIO()
-        excel_df = pd.DataFrame(excel_rows)
-        excel_df.to_excel(excel_buffer, index=False, header=False)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        cairo_font = Font(name='Cairo', size=12)
+        for row in excel_rows:
+            ws.append(row)
+        # Apply Cairo font to all cells
+        for row in ws.iter_rows():
+            for cell in row:
+                cell.font = cairo_font
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
         st.download_button(
             label="تحميل التقرير كـ Excel بنفس تنسيق PDF",
             data=excel_buffer.getvalue(),
