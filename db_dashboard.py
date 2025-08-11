@@ -1,6 +1,5 @@
 import streamlit as st
 import sqlite3
-import os
 import pandas as pd
 
 st.set_page_config(page_title="تقارير الطلاب المتعثرين", layout="wide")
@@ -229,7 +228,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     with col_pdf1:
         import io
         with st.spinner("جاري تجهيز تقرير PDF..."):
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
             from reportlab.lib.pagesizes import A4, landscape
             from reportlab.lib import colors
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -431,7 +430,6 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             elements.append(table)
         # حساب عدد الصفحات
         def count_pages():
-            from reportlab.pdfgen import canvas as pdfcanvas
             temp_buffer = io.BytesIO()
             temp_doc = SimpleDocTemplate(temp_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
             # إعادة بناء عناصر الجدول فقط (بدون نصوص أو فواصل)
