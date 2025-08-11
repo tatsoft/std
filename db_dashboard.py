@@ -120,7 +120,7 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
         short_title = "احصائي_راسبين_مواد_مراحل_فصول_اعوام.pdf"
         st.download_button(
             label="تحميل التقرير كـ PDF للطباعة (إحصائي)",
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
+            data=pdf_buffer.getvalue(),
             file_name=short_title,
             mime="application/pdf"
         )
@@ -208,7 +208,6 @@ elif report_type == "عدد الطلاب الراسبين في كل مرحلة":
     with st.spinner("جاري تجهيز تقرير PDF..."):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.pagesizes import A4, landscape
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=15, bottomMargin=30)
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.pdfbase import pdfmetrics
