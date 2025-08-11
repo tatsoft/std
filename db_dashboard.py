@@ -237,6 +237,15 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             import arabic_reshaper
             from bidi.algorithm import get_display
             pdf_buffer = io.BytesIO()
+            # تسجيل الخط العربي (Amiri فقط)
+            try:
+                pdfmetrics.registerFont(TTFont('Amiri-Regular', 'amiri/Amiri-Regular.ttf'))
+                pdfmetrics.registerFont(TTFont('Amiri-Bold', 'amiri/Amiri-Bold.ttf'))
+                font_name = 'Amiri-Regular'
+                font_bold = 'Amiri-Bold'
+            except Exception:
+                font_name = 'Helvetica'
+                font_bold = 'Helvetica-Bold'
             # تحديد حجم الصفحة حسب اختيار المستخدم
             if page_orientation == "عرضي (A4 Landscape)":
                 page_size = landscape(A4)
@@ -246,10 +255,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             def draw_header(canvas, doc):
                 canvas.saveState()
                 # إعداد الخط
-                try:
-                    canvas.setFont('Amiri-Bold', 14)
-                except Exception:
-                    canvas.setFont('Helvetica-Bold', 14)
+                canvas.setFont(font_bold, 14)
                 today_str = datetime.datetime.now().strftime('%Y-%m-%d')
                 # التاريخ يسار
                 canvas.drawRightString(doc.pagesize[0]-20, doc.pagesize[1]-30, ar_text(f'التاريخ: {today_str}'))
@@ -272,20 +278,14 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                     filter_labels.append(f'العام: {العام}')
                 if filter_labels:
                     filters_text = ' | '.join(filter_labels)
-                    try:
-                        canvas.setFont('Amiri-Regular', 12)
-                    except Exception:
-                        canvas.setFont('Helvetica', 12)
+                    canvas.setFont(font_name, 12)
                     canvas.drawString(20, doc.pagesize[1]-50, ar_text(filters_text))
                 canvas.restoreState()
 
             # إعداد دالة ذيل الصفحة
             def draw_footer(canvas, doc):
                 canvas.saveState()
-                try:
-                    canvas.setFont('Amiri-Regular', 11)
-                except Exception:
-                    canvas.setFont('Helvetica', 11)
+                canvas.setFont(font_name, 11)
                 page_num = canvas.getPageNumber()
                 # رقم الصفحة يسار، عدد الصفحات يمين
                 canvas.drawString(20, 15, ar_text(f'صفحة {page_num} من {{}}'))
@@ -294,20 +294,6 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             import datetime
             doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
         elements = []
-        # تسجيل الخط العربي
-        try:
-            pdfmetrics.registerFont(TTFont('Amiri-Regular', 'amiri/Amiri-Regular.ttf'))
-            pdfmetrics.registerFont(TTFont('Amiri-Bold', 'amiri/Amiri-Bold.ttf'))
-            font_name = 'Amiri-Regular'
-            font_bold = 'Amiri-Bold'
-        except Exception:
-            try:
-                pdfmetrics.registerFont(TTFont('Cairo', 'Cairo-Regular.ttf'))
-                font_name = 'Cairo'
-                font_bold = 'Cairo'
-            except Exception:
-                font_name = 'Helvetica'
-                font_bold = 'Helvetica-Bold'
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, rightIndent=0, leftIndent=0, spaceAfter=8))
         styles.add(ParagraphStyle(name='Arabic', fontName=font_name, fontSize=12, alignment=1, rightIndent=0, leftIndent=0))
