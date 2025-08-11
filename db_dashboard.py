@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import datetime
 
 st.set_page_config(page_title="تقارير الطلاب المتعثرين", layout="wide")
 # إنشاء جدول للعناوين المخصصة إذا لم يكن موجودًا
