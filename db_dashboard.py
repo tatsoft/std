@@ -509,9 +509,17 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     st.dataframe(df, use_container_width=True)
     # Prepare excel_rows for Excel export (always defined)
     excel_rows = []
-    excel_rows.append([selected_title])
+    def ar_text_excel(text):
+        try:
+            import arabic_reshaper
+            from bidi.algorithm import get_display
+            reshaped = arabic_reshaper.reshape(str(text))
+            return get_display(reshaped)
+        except Exception:
+            return str(text)
+    excel_rows.append([ar_text_excel(selected_title)])
     today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    excel_rows.append(f'تاريخ التقرير: {today_str}')
+    excel_rows.append([ar_text_excel(f'تاريخ التقرير: {today_str}')])
     filter_labels = []
     if المادة != 'كل المواد':
         filter_labels.append(f'المادة: {المادة}')
@@ -522,17 +530,20 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     if العام != 'كل الأعوام':
         filter_labels.append(f'العام: {العام}')
     if filter_labels:
-        excel_rows.append(['الفلاتر: ' + ' | '.join(filter_labels)])
+        excel_rows.append([ar_text_excel('الفلاتر: ' + ' | '.join(filter_labels))])
     unique_students = df['رقم_الهوية'].nunique() if 'رقم_الهوية' in df.columns else len(df)
-    excel_rows.append([f'عدد الطلاب (بدون تكرار): {unique_students}'])
-    excel_rows.append([f'عدد مواد الرسوب: {len(df)}'])
+    excel_rows.append([ar_text_excel(f'عدد الطلاب (بدون تكرار): {unique_students}')])
+    excel_rows.append([ar_text_excel(f'عدد مواد الرسوب: {len(df)}')])
     excel_rows.append([''])
     if len(df) > 0:
-        excel_rows.append([c for c in df.columns])
+        excel_rows.append([ar_text_excel(c) for c in df.columns])
         for _, row in df.iterrows():
-            excel_rows.append([row[c] for c in df.columns])
-    excel_rows.append(['---'])
-    excel_rows.append(['توقيع المسؤول:'])
+            excel_rows.append([
+                ar_text_excel(row[c]) if pd.notnull(row[c]) else ''
+                for c in df.columns
+            ])
+    excel_rows.append([ar_text_excel('---')])
+    excel_rows.append([ar_text_excel('توقيع المسؤول:')])
     import io
     with st.spinner("جاري تجهيز تقرير Excel..."):
         excel_buffer = io.BytesIO()
@@ -542,7 +553,8 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             label="تحميل التقرير كـ Excel بنفس تنسيق PDF",
             data=excel_buffer.getvalue(),
             file_name="filtered_report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="excel_download_button_main"
         )
 
     # زر تحميل التقرير كـ PDF
@@ -892,7 +904,8 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             label="تحميل التقرير كـ PDF للطباعة (يدعم العربية)",
             data=pdf_buffer.getvalue(),
             file_name=make_filename(selected_title),
-            mime="application/pdf"
+            mime="application/pdf",
+            key="pdf_download_button_main"
         )
 
 if report_type == "قائمة الطلاب المتعثرين مع التفاصيل":
