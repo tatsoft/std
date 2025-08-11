@@ -693,92 +693,94 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     # إخفاء عمود التوقيع إذا تم اختيار ذلك
     if hide_signature_col and 'التوقيع' in visible_cols:
         visible_cols.remove('التوقيع')
-        if len(df) == 0:
-            elements.append(Spacer(1, 24))
-            elements.append(Paragraph(ar_text('لا توجد بيانات مطابقة للفلاتر المختارة.'), styles['Arabic']))
-        else:
-            data_table = [ [ar_text(col) for col in visible_cols] ]
-            for idx, row in enumerate(df.iterrows(), 1):
-                _, row_data = row
-                row_dict = row_data.to_dict()
-                row_list = []
-                for col in visible_cols:
-                    if col == 'التسلسل':
-                        row_list.append(str(idx))
-                    elif col == 'التوقيع':
-                        row_list.append('')
-                    elif col == 'الدرجة':
-                        row_list.append(row_dict.get('الدرجة', ''))
-                    elif col == 'المرحلة':
-                        val = row_dict.get('المرحلة', '')
-                        if 'الأول' in val:
-                            row_list.append('1')
-                        elif 'الثاني' in val:
-                            row_list.append('2')
-                        elif 'الثالث' in val:
-                            row_list.append('3')
-                        else:
-                            row_list.append('')
-                    elif col == 'الفصل':
-                        val = row_dict.get('الفصل', '')
-                        if 'الأول' in val:
-                            row_list.append('1')
-                        elif 'الثاني' in val:
-                            row_list.append('2')
-                        elif 'الثالث' in val:
-                            row_list.append('3')
-                        else:
-                            row_list.append('')
+
+    # PDF table and button should always be rendered, regardless of signing column visibility
+    if len(df) == 0:
+        elements.append(Spacer(1, 24))
+        elements.append(Paragraph(ar_text('لا توجد بيانات مطابقة للفلاتر المختارة.'), styles['Arabic']))
+    else:
+        data_table = [ [ar_text(col) for col in visible_cols] ]
+        for idx, row in enumerate(df.iterrows(), 1):
+            _, row_data = row
+            row_dict = row_data.to_dict()
+            row_list = []
+            for col in visible_cols:
+                if col == 'التسلسل':
+                    row_list.append(str(idx))
+                elif col == 'التوقيع':
+                    row_list.append('')
+                elif col == 'الدرجة':
+                    row_list.append(row_dict.get('الدرجة', ''))
+                elif col == 'المرحلة':
+                    val = row_dict.get('المرحلة', '')
+                    if 'الأول' in val:
+                        row_list.append('1')
+                    elif 'الثاني' in val:
+                        row_list.append('2')
+                    elif 'الثالث' in val:
+                        row_list.append('3')
                     else:
-                        row_list.append(ar_text(row_dict.get(col, '')))
-                data_table.append(row_list)
-            data_table = [row[::-1] for row in data_table]
-            col_names_final = visible_cols
-            from reportlab.pdfbase.pdfmetrics import stringWidth
-            from reportlab.lib.pagesizes import A4
-            font_size = 12
-            font_used = font_name
-            num_cols = len(col_names_final)
-            raw_widths = []
-            for col_idx, col in enumerate(col_names_final):
-                col_values = [str(data_table[row_idx][col_idx]) for row_idx in range(len(data_table))]
-                max_text = max(col_values, key=len)
-                width = stringWidth(max_text, font_used, font_size) + 20
-                raw_widths.append(max(50, min(width, 220)))
-            from reportlab.lib.pagesizes import A4, landscape
-            if page_orientation == "عرضي (A4 Landscape)":
-                PAGE_WIDTH = landscape(A4)[0] - 20 - 20
-            else:
-                PAGE_WIDTH = A4[0] - 20 - 20
-            total_raw = sum(raw_widths)
-            if total_raw > 0:
-                col_widths = [w * PAGE_WIDTH / total_raw for w in raw_widths]
-            else:
-                col_widths = [PAGE_WIDTH / num_cols] * num_cols
-            row_height = 30
-            row_heights = [row_height] * len(data_table)
-            # تكرار رأس الجدول في كل صفحة
-            table = Table(data_table, colWidths=col_widths, rowHeights=row_heights, repeatRows=1)
-            # تحديد رقم عمود الاسم بعد العكس (RTL)
-            if 'اسم_الطالب' in col_names_final:
-                name_col_idx = col_names_final[::-1].index('اسم_الطالب')
-            else:
-                name_col_idx = None
-            style_list = [
-                ('FONTNAME', (0,0), (-1,0), font_bold),
-                ('FONTNAME', (0,1), (-1,-1), font_name),
-                ('FONTSIZE', (0,0), (-1,-1), 11),
-                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                ('GRID', (0,0), (-1,-1), 1, colors.black),
-                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-            ]
-            if name_col_idx is not None:
-                style_list.append(('ALIGN', (name_col_idx,0), (name_col_idx,-1), 'RIGHT'))
-            for i in range(num_cols):
-                style_list.append(('WORDWRAP', (i,0), (i,-1), 'CJK'))
-            table.setStyle(TableStyle(style_list))
-            elements.append(table)
+                        row_list.append('')
+                elif col == 'الفصل':
+                    val = row_dict.get('الفصل', '')
+                    if 'الأول' in val:
+                        row_list.append('1')
+                    elif 'الثاني' in val:
+                        row_list.append('2')
+                    elif 'الثالث' in val:
+                        row_list.append('3')
+                    else:
+                        row_list.append('')
+                else:
+                    row_list.append(ar_text(row_dict.get(col, '')))
+            data_table.append(row_list)
+        data_table = [row[::-1] for row in data_table]
+        col_names_final = visible_cols
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        from reportlab.lib.pagesizes import A4
+        font_size = 12
+        font_used = font_name
+        num_cols = len(col_names_final)
+        raw_widths = []
+        for col_idx, col in enumerate(col_names_final):
+            col_values = [str(data_table[row_idx][col_idx]) for row_idx in range(len(data_table))]
+            max_text = max(col_values, key=len)
+            width = stringWidth(max_text, font_used, font_size) + 20
+            raw_widths.append(max(50, min(width, 220)))
+        from reportlab.lib.pagesizes import A4, landscape
+        if page_orientation == "عرضي (A4 Landscape)":
+            PAGE_WIDTH = landscape(A4)[0] - 20 - 20
+        else:
+            PAGE_WIDTH = A4[0] - 20 - 20
+        total_raw = sum(raw_widths)
+        if total_raw > 0:
+            col_widths = [w * PAGE_WIDTH / total_raw for w in raw_widths]
+        else:
+            col_widths = [PAGE_WIDTH / num_cols] * num_cols
+        row_height = 30
+        row_heights = [row_height] * len(data_table)
+        # تكرار رأس الجدول في كل صفحة
+        table = Table(data_table, colWidths=col_widths, rowHeights=row_heights, repeatRows=1)
+        # تحديد رقم عمود الاسم بعد العكس (RTL)
+        if 'اسم_الطالب' in col_names_final:
+            name_col_idx = col_names_final[::-1].index('اسم_الطالب')
+        else:
+            name_col_idx = None
+        style_list = [
+            ('FONTNAME', (0,0), (-1,0), font_bold),
+            ('FONTNAME', (0,1), (-1,-1), font_name),
+            ('FONTSIZE', (0,0), (-1,-1), 11),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ]
+        if name_col_idx is not None:
+            style_list.append(('ALIGN', (name_col_idx,0), (name_col_idx,-1), 'RIGHT'))
+        for i in range(num_cols):
+            style_list.append(('WORDWRAP', (i,0), (i,-1), 'CJK'))
+        table.setStyle(TableStyle(style_list))
+        elements.append(table)
         # حساب عدد الصفحات
         def count_pages():
             temp_buffer = io.BytesIO()
