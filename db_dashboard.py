@@ -507,12 +507,20 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
     st.markdown("<hr>", unsafe_allow_html=True)
     st.dataframe(df, use_container_width=True)
     # زر تحميل التقرير كـ Excel
+    # ...existing code...
+    # After PDF export logic, use visible_cols and data_table for Excel
     import io
     with st.spinner("جاري تجهيز تقرير Excel..."):
         excel_buffer = io.BytesIO()
-        df.to_excel(excel_buffer, index=False)
+        import pandas as pd
+        if len(df) == 0:
+            excel_df = pd.DataFrame()
+        else:
+            # Use the same columns and data as PDF
+            excel_df = pd.DataFrame(data_table[1:], columns=[ar_text(c) for c in visible_cols][::-1])
+        excel_df.to_excel(excel_buffer, index=False)
         st.download_button(
-            label="تحميل التقرير كـ Excel",
+            label="تحميل التقرير كـ Excel بنفس تنسيق PDF",
             data=excel_buffer.getvalue(),
             file_name="filtered_report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -695,6 +703,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
         visible_cols.remove('التوقيع')
 
     # PDF table and button should always be rendered, regardless of signing column visibility
+    data_table = []
     if len(df) == 0:
         elements.append(Spacer(1, 24))
         elements.append(Paragraph(ar_text('لا توجد بيانات مطابقة للفلاتر المختارة.'), styles['Arabic']))
@@ -781,6 +790,51 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
             style_list.append(('WORDWRAP', (i,0), (i,-1), 'CJK'))
         table.setStyle(TableStyle(style_list))
         elements.append(table)
+
+    # Excel export using same columns and data as PDF
+    import io
+    with st.spinner("جاري تجهيز تقرير Excel..."):
+        excel_buffer = io.BytesIO()
+        import pandas as pd
+        excel_rows = []
+        # Header rows
+        excel_rows.append([selected_title])
+        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        excel_rows.append([f'تاريخ التقرير: {today_str}'])
+        filter_labels = []
+        if المادة != 'كل المواد':
+            filter_labels.append(f'المادة: {المادة}')
+        if المرحلة != 'كل المراحل':
+            filter_labels.append(f'المرحلة: {المرحلة}')
+        if الفصل != 'كل الفصول':
+            filter_labels.append(f'الفصل: {الفصل}')
+        if العام != 'كل الأعوام':
+            filter_labels.append(f'العام: {العام}')
+        if filter_labels:
+            excel_rows.append(['الفلاتر: ' + ' | '.join(filter_labels)])
+        # Summary stats
+        unique_students = df['رقم_الهوية'].nunique() if 'رقم_الهوية' in df.columns else len(df)
+        excel_rows.append([f'عدد الطلاب (بدون تكرار): {unique_students}'])
+        excel_rows.append([f'عدد مواد الرسوب: {len(df)}'])
+        # Blank row
+        excel_rows.append([''])
+        # Table header
+        if len(data_table) > 0:
+            excel_rows.append([c for c in visible_cols][::-1])
+            # Table data
+            for row in data_table[1:]:
+                excel_rows.append(row)
+        # Footer row
+        excel_rows.append(['---'])
+        excel_rows.append(['توقيع المسؤول:'])
+        excel_df = pd.DataFrame(excel_rows)
+        excel_df.to_excel(excel_buffer, index=False, header=False)
+        st.download_button(
+            label="تحميل التقرير كـ Excel بنفس تنسيق PDF",
+            data=excel_buffer.getvalue(),
+            file_name="filtered_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         # حساب عدد الصفحات
         def count_pages():
             temp_buffer = io.BytesIO()
