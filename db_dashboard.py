@@ -115,7 +115,7 @@ if report_type == "عدد الطلاب الراسبين في كل مادة لك�
         ]
         table.setStyle(TableStyle(style_list))
         elements.append(table)
-        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=30, bottomMargin=30)
         doc.build(elements)
         short_title = "احصائي_راسبين_مواد_مراحل_فصول_اعوام.pdf"
         st.download_button(
@@ -557,8 +557,26 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 canvas.saveState()
                 # إعداد شبكة رأس الصفحة: 3 أعمدة × 2 صفوف
                 page_width = doc.pagesize[0]
-                top_y = doc.pagesize[1] - 20
-                row_height = 28
+                # Dynamically calculate header grid height based on logo and font sizes
+                logo_height = 0
+                try:
+                    from reportlab.lib.utils import ImageReader
+                    logo_path = "MOELogo.png"
+                    logo = ImageReader(logo_path)
+                    col_width = page_width / 3
+                    logo_w = col_width * 0.45
+                    img_w, img_h = logo.getSize()
+                    aspect = img_h / img_w
+                    logo_height = logo_w * aspect
+                except Exception:
+                    logo_height = 0
+                # Font heights (approximate)
+                title_font_height = 15 * 1.2
+                info_font_height = 13 * 1.2
+                sub_font_height = 12 * 1.2
+                # Calculate row height as max of logo, title, info, sub-fonts
+                row_height = int(max(logo_height, title_font_height, info_font_height, sub_font_height, 32))
+                top_y = doc.pagesize[1] - 40
                 col_width = page_width / 3
                 # الصف الأول: شعار يسار، عنوان وسط، التاريخ يمين
                 # الصف الثاني: عدد الطلاب يسار، اسم الطالب وسط، عدد مواد الرسوب يمين
@@ -567,7 +585,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                     from reportlab.lib.utils import ImageReader
                     logo_path = "MOELogo.png"
                     logo = ImageReader(logo_path)
-                    logo_w = col_width * 0.7
+                    logo_w = col_width * 0.35
                     try:
                         img_w, img_h = logo.getSize()
                         aspect = img_h / img_w
@@ -589,23 +607,21 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 date_x = page_width - col_width + 10
                 date_y = top_y - row_height/2
                 canvas.drawString(date_x, date_y, ar_text(f'التاريخ: {today_str}'))
-                # الصف الثاني
-                # عدد الطلاب يسار
+                # الصف الثاني: عدد الطلاب و عدد المواد تحت التاريخ في نفس الخلية
                 unique_students = df['رقم_الهوية'].nunique() if 'رقم_الهوية' in df.columns else len(df)
-                students_x = 10
-                students_y = top_y - row_height - row_height/2
+                stats_x = date_x
+                stats_y1 = date_y - 18
+                stats_y2 = stats_y1 - 15
                 canvas.setFont(font_name, 12)
-                canvas.drawString(students_x, students_y, ar_text(f'عدد الطلاب (بدون تكرار): {unique_students}'))
+                canvas.drawString(stats_x, stats_y1, ar_text(f'عدد الطلاب (بدون تكرار): {unique_students}'))
+                canvas.setFont(font_name, 11)
+                canvas.drawString(stats_x, stats_y2, ar_text(f'عدد مواد الرسوب: {len(df)}'))
                 # اسم الطالب وسط
+                center_y = date_y - 18  # Use same vertical position as stats_y1
                 if اسم_الطالب_مفلتر:
                     canvas.setFont(font_name, 12)
-                    canvas.drawCentredString(page_width/2, students_y, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
-                # عدد مواد الرسوب يمين
-                fails_x = page_width - col_width + 10
-                fails_y = students_y
-                canvas.setFont(font_name, 12)
-                canvas.drawString(fails_x, fails_y, ar_text(f'عدد مواد الرسوب: {len(df)}'))
-                # الفلاتر تحت الصف الثاني
+                    canvas.drawCentredString(page_width/2, center_y, ar_text(f'اسم الطالب: {اسم_الطالب_مفلتر}'))
+                # الفلاتر في يمين الصف الثاني (بدلاً من عدد مواد الرسوب)
                 filter_labels = []
                 if المادة != 'كل المواد':
                     filter_labels.append(f'المادة: {المادة}')
@@ -617,9 +633,10 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                     filter_labels.append(f'العام: {العام}')
                 if filter_labels:
                     filters_text = ' | '.join(filter_labels)
-                    filters_y = students_y - row_height/1.2
+                    filters_x = page_width - col_width + 10
+                    filters_y = center_y
                     canvas.setFont(font_name, 11)
-                    canvas.drawString(10, filters_y, ar_text(filters_text))
+                    canvas.drawString(filters_x, filters_y, ar_text(filters_text))
                 canvas.restoreState()
 
             # إعداد دالة ذيل الصفحة
@@ -632,7 +649,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                 canvas.restoreState()
 
             import datetime
-            doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=60, bottomMargin=30)
+        doc = SimpleDocTemplate(pdf_buffer, pagesize=page_size, rightMargin=20, leftMargin=20, topMargin=110, bottomMargin=30)  # Increase top margin for bigger header
         elements = []
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name='ArabicTitle', fontName=font_bold, fontSize=14, alignment=1, rightIndent=0, leftIndent=0, spaceAfter=8))
