@@ -1,27 +1,279 @@
+
+# --- Imports ---
 import sys
 import sqlite3
 import pandas as pd
+import datetime
+import openpyxl
+from openpyxl.styles import Font as XLFont
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QLineEdit, QTableWidget, QTableWidgetItem, QFileDialog, QMessageBox
 )
 from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
-import datetime
-import openpyxl
-from openpyxl.styles import Font as XLFont
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout
 import arabic_reshaper
 from bidi.algorithm import get_display
 
 DB_PATH = 'students_failures.db'
 
-# Helper for Arabic text
+# --- Utility Functions ---
 def ar_text(text):
     try:
         reshaped = arabic_reshaper.reshape(str(text))
         return get_display(reshaped)
     except Exception:
         return str(text)
+
+# --- Database Access Layer ---
+class DBHelper:
+    def __init__(self, db_path=DB_PATH):
+        self.db_path = db_path
+        self.conn = sqlite3.connect(self.db_path)
+    def fetch_distinct(self, table):
+        c = self.conn.cursor()
+        c.execute(f'SELECT DISTINCT name FROM {table}')
+        return [row[0] for row in c.fetchall()]
+    def run_query(self, query):
+        return pd.read_sql_query(query, self.conn)
+    def close(self):
+        self.conn.close()
+
+# --- Data Processing Helpers ---
+class DataHelper:
+    @staticmethod
+    def build_query(filters):
+        where_clause = 'WHERE ' + ' AND '.join(filters) if filters else ''
+        query = f'''
+        SELECT 
+            y.name AS العام,
+            t.name AS الفصل,
+            s.name AS المرحلة,
+            sub.name AS المادة,
+            stu.name AS اسم_الطالب,
+            stu.national_id AS رقم_الهوية
+        FROM failures f
+        JOIN years y ON f.year_id = y.id
+        JOIN terms t ON f.term_id = t.id
+        JOIN stages s ON f.stage_id = s.id
+        JOIN subjects sub ON f.subject_id = sub.id
+        JOIN students stu ON f.student_id = stu.id
+        {where_clause}
+        ORDER BY y.name, t.name, s.name, sub.name, stu.name
+        '''
+        return query
+
+    @staticmethod
+    def get_column_order(df):
+        desired_order = ['التوقيع', 'العام', 'الفصل', 'المرحلة', 'المادة', 'اسم_الطالب', 'رقم_الهوية']
+        columns_ordered = [col for col in desired_order if col in df.columns]
+        if 'التوقيع' not in columns_ordered:
+            columns_ordered = ['التوقيع'] + columns_ordered
+        columns_ordered += [col for col in df.columns if col not in columns_ordered and col != 'التوقيع']
+        return columns_ordered
+
+# --- Main Application UI ---
+class StudentFailuresApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('واجهة تقارير الطلاب المتعثرين')
+        self.setGeometry(100, 100, 1100, 700)
+        font = QFont('Cairo', 12)
+        self.setFont(font)
+        self.setLayoutDirection(Qt.RightToLeft)
+        QApplication.instance().setLayoutDirection(Qt.RightToLeft)
+        QApplication.instance().setFont(font)
+        self.db = DBHelper()
+        self.init_ui()
+        self.load_filters()
+        self.load_data()
+
+    def init_ui(self):
+        main_widget = QWidget()
+        main_layout = QVBoxLayout()
+        main_layout.setLayoutDirection(Qt.RightToLeft)
+        filter_layout = QHBoxLayout()
+        filter_layout.setLayoutDirection(Qt.RightToLeft)
+        font = QFont('Cairo', 12)
+        # National ID input (rightmost)
+        self.national_id_input = QLineEdit()
+        self.national_id_input.setPlaceholderText('رقم الهوية (اختياري)')
+        self.national_id_input.setFont(font)
+        self.national_id_input.setLayoutDirection(Qt.RightToLeft)
+        filter_layout.addWidget(self.national_id_input)
+        # Subject
+        self.subject_combo = QComboBox()
+        self.subject_combo.setFont(font)
+        self.subject_combo.setLayoutDirection(Qt.RightToLeft)
+        lbl_subject = QLabel('المادة:')
+        lbl_subject.setFont(font)
+        lbl_subject.setAlignment(Qt.AlignRight)
+        filter_layout.addWidget(lbl_subject)
+        filter_layout.addWidget(self.subject_combo)
+        # Stage
+        self.stage_combo = QComboBox()
+        self.stage_combo.setFont(font)
+        self.stage_combo.setLayoutDirection(Qt.RightToLeft)
+        lbl_stage = QLabel('المرحلة:')
+        lbl_stage.setFont(font)
+        lbl_stage.setAlignment(Qt.AlignRight)
+        filter_layout.addWidget(lbl_stage)
+        filter_layout.addWidget(self.stage_combo)
+        # Term
+        self.term_combo = QComboBox()
+        self.term_combo.setFont(font)
+        self.term_combo.setLayoutDirection(Qt.RightToLeft)
+        lbl_term = QLabel('الفصل:')
+        lbl_term.setFont(font)
+        lbl_term.setAlignment(Qt.AlignRight)
+        filter_layout.addWidget(lbl_term)
+        filter_layout.addWidget(self.term_combo)
+        # Year
+        self.year_combo = QComboBox()
+        self.year_combo.setFont(font)
+        self.year_combo.setLayoutDirection(Qt.RightToLeft)
+        lbl_year = QLabel('العام:')
+        lbl_year.setFont(font)
+        lbl_year.setAlignment(Qt.AlignRight)
+        filter_layout.addWidget(lbl_year)
+        filter_layout.addWidget(self.year_combo)
+        # Connect filter signals to reload data
+        self.subject_combo.currentIndexChanged.connect(self.load_data)
+        self.stage_combo.currentIndexChanged.connect(self.load_data)
+        self.term_combo.currentIndexChanged.connect(self.load_data)
+        self.year_combo.currentIndexChanged.connect(self.load_data)
+        self.national_id_input.returnPressed.connect(self.load_data)
+        # Export and customize columns buttons (RTL)
+        export_layout = QHBoxLayout()
+        export_layout.setLayoutDirection(Qt.RightToLeft)
+        self.btn_export_excel = QPushButton('تصدير إلى Excel')
+        self.btn_export_excel.setFont(font)
+        self.btn_export_excel.setLayoutDirection(Qt.RightToLeft)
+        self.btn_export_excel.clicked.connect(self.export_excel)
+        export_layout.addWidget(self.btn_export_excel)
+        self.btn_export_pdf = QPushButton('تصدير إلى PDF')
+        self.btn_export_pdf.setFont(font)
+        self.btn_export_pdf.setLayoutDirection(Qt.RightToLeft)
+        self.btn_export_pdf.clicked.connect(self.export_pdf)
+        export_layout.addWidget(self.btn_export_pdf)
+        self.btn_customize_columns = QPushButton('تخصيص الأعمدة')
+        self.btn_customize_columns.setFont(font)
+        self.btn_customize_columns.setLayoutDirection(Qt.RightToLeft)
+        self.btn_customize_columns.clicked.connect(self.show_column_customizer)
+        export_layout.addWidget(self.btn_customize_columns)
+        # Table widget (RTL)
+        self.table = QTableWidget()
+        self.table.setFont(font)
+        self.table.setLayoutDirection(Qt.RightToLeft)
+        self.table.horizontalHeader().setLayoutDirection(Qt.RightToLeft)
+        self.table.verticalHeader().setLayoutDirection(Qt.RightToLeft)
+        main_layout.addLayout(filter_layout)
+        main_layout.addLayout(export_layout)
+        main_layout.addWidget(self.table)
+        main_widget.setLayout(main_layout)
+        main_widget.setLayoutDirection(Qt.RightToLeft)
+        self.setCentralWidget(main_widget)
+        # Apply dark theme stylesheet
+        dark_stylesheet = """
+        QWidget {
+            background-color: #232629;
+            color: #f0f0f0;
+            font-family: 'Cairo';
+        }
+        QLineEdit, QComboBox, QTableWidget, QTableView {
+            background-color: #31363b;
+            color: #f0f0f0;
+            border: 1px solid #444;
+        }
+        QHeaderView::section {
+            background-color: #1976D2;
+            color: white;
+            font-weight: bold;
+            text-align: right;
+        }
+        QPushButton {
+            background-color: #1976D2;
+            color: white;
+            border-radius: 6px;
+            padding: 6px 12px;
+        }
+        QPushButton:hover {
+            background-color: #1565c0;
+        }
+        """
+        self.setStyleSheet(dark_stylesheet)
+
+    def load_filters(self):
+        self.subject_combo.clear()
+        self.subject_combo.addItem('كل المواد')
+        for name in self.db.fetch_distinct('subjects'):
+            self.subject_combo.addItem(name)
+        self.stage_combo.clear()
+        self.stage_combo.addItem('كل المراحل')
+        for name in self.db.fetch_distinct('stages'):
+            self.stage_combo.addItem(name)
+        self.term_combo.clear()
+        self.term_combo.addItem('كل الفصول')
+        for name in self.db.fetch_distinct('terms'):
+            self.term_combo.addItem(name)
+        self.year_combo.clear()
+        self.year_combo.addItem('كل الأعوام')
+        for name in self.db.fetch_distinct('years'):
+            self.year_combo.addItem(name)
+
+    def build_query(self):
+        filters = []
+        if self.national_id_input.text().strip():
+            filters.append(f"stu.national_id LIKE '%{self.national_id_input.text().strip()}%'")
+        if self.subject_combo.currentText() != 'كل المواد':
+            filters.append(f"sub.name = '{self.subject_combo.currentText()}'")
+        if self.stage_combo.currentText() != 'كل المراحل':
+            filters.append(f"s.name = '{self.stage_combo.currentText()}'")
+        if self.term_combo.currentText() != 'كل الفصول':
+            filters.append(f"t.name = '{self.term_combo.currentText()}'")
+        if self.year_combo.currentText() != 'كل الأعوام':
+            filters.append(f"y.name = '{self.year_combo.currentText()}'")
+        return DataHelper.build_query(filters)
+
+    def load_data(self):
+        font = QFont('Cairo', 12)
+        query = self.build_query()
+        try:
+            df = self.db.run_query(query)
+        except Exception as e:
+            QMessageBox.critical(self, 'خطأ', f'خطأ في الاستعلام: {e}')
+            return
+        self.df = df
+        columns_rtl = DataHelper.get_column_order(df)
+        self.table.setRowCount(len(df))
+        self.table.setColumnCount(len(columns_rtl))
+        self.table.setHorizontalHeaderLabels([str(col) for col in columns_rtl])
+        self.table.setLayoutDirection(Qt.RightToLeft)
+        self.table.horizontalHeader().setFont(font)
+        for i, row in df.iterrows():
+            row_dict = row.to_dict()
+            row_rtl = []
+            for col in columns_rtl:
+                if col == 'التوقيع':
+                    row_rtl.append('')
+                else:
+                    row_rtl.append(row_dict.get(col, ''))
+            for j, val in enumerate(row_rtl):
+                item = QTableWidgetItem(str(val))
+                col_name = columns_rtl[j]
+                if (col_name in ['رقم_الهوية', 'م', 'عدد_الطلاب_الراسبين', 'عدد_مرات_التعثر'] or str(val).isdigit()):
+                    item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                else:
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                item.setFont(font)
+                self.table.setItem(i, j, item)
+        self.table.resizeColumnsToContents()
+        if hasattr(self, 'column_checkboxes'):
+            for cb, idx in self.column_checkboxes:
+                self.table.setColumnHidden(idx, not cb.isChecked())
+
+    # ...existing code for show_column_customizer, export_pdf, export_excel...
 
 class StudentFailuresApp(QMainWindow):
     def load_filters(self):
@@ -440,15 +692,25 @@ class StudentFailuresApp(QMainWindow):
             QMessageBox.critical(self, 'خطأ', f'خطأ في الاستعلام: {e}')
             return
         self.df = df
-        # Reverse columns for RTL display
-        columns_rtl = list(df.columns)[::-1]
+        # Set column order for true RTL: first column on the right (رقم_الهوية), last on the left (التوقيع)
+        desired_order = ['رقم_الهوية', 'اسم_الطالب', 'المادة', 'المرحلة', 'الفصل', 'العام', 'التوقيع']
+        columns_ordered = [col for col in desired_order if col in df.columns or col == 'التوقيع']
+        columns_ordered += [col for col in df.columns if col not in columns_ordered and col != 'التوقيع']
+        columns_rtl = columns_ordered
         self.table.setRowCount(len(df))
         self.table.setColumnCount(len(columns_rtl))
         self.table.setHorizontalHeaderLabels([str(col) for col in columns_rtl])
         self.table.setLayoutDirection(Qt.RightToLeft)
         self.table.horizontalHeader().setFont(font)
         for i, row in df.iterrows():
-            row_rtl = list(row)[::-1]
+            # Reorder row to match columns_rtl, add empty 'التوقيع' cell if needed
+            row_dict = row.to_dict()
+            row_rtl = []
+            for col in columns_rtl:
+                if col == 'التوقيع':
+                    row_rtl.append('')
+                else:
+                    row_rtl.append(row_dict.get(col, ''))
             for j, val in enumerate(row_rtl):
                 item = QTableWidgetItem(str(val))
                 # Detect column type for alignment
