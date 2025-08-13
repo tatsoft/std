@@ -635,7 +635,7 @@ elif report_type == "عدد واسماء الطلاب الراسبين في ما
                     from reportlab.lib.utils import ImageReader
                     logo_path = "MOELogo.png"
                     logo = ImageReader(logo_path)
-                    logo_w = col_width * 0.35
+                    logo_w = col_width * 0.55  # Increased relative size
                     try:
                         img_w, img_h = logo.getSize()
                         aspect = img_h / img_w
